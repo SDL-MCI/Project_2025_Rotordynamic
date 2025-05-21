@@ -17,8 +17,8 @@ print("\n=== Define the beam and material properties ===")
 L = 2.4384 # float(input("Total beam length [m]: "))
 Dinner = 0.0125 # float(input("Inner diameter of beam [m]: "))
 Douter  = 0.051 # float(input("Outer diameter of beam [m]: "))
-rho = 7.8334E-6 # float(input("Density [kg/m^3]: "))
-E = 2.0684E8 # float(input("Young's modulus [Pa]: "))
+rho = 7833.4 # float(input("Density [kg/m^3]: "))
+E = 2.0684e11 # float(input("Young's modulus [Pa]: "))
 Omega = 1000/60*2*np.pi # float(input("Spin speed [rad/s]: "))
 
 I = (np.pi / 64) * (Douter**4 - Dinner**4)  # Moment of inertia for hollow circular cross-section [m^4]

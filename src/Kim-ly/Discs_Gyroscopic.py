@@ -22,7 +22,7 @@ A = (np.pi * D**2) / 4      # Cross-sectional area [m^2]
 
 
 # === FEM discretization ===
-n_elem = 10
+n_elem = 24
 n_nodes = n_elem + 1
 dof_per_node = 4                            # 4 DOF: u_y, theta_z, u_z, theta_y
 total_dof = dof_per_node * n_nodes
