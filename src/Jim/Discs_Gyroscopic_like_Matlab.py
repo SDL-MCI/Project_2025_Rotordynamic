@@ -64,15 +64,114 @@ def beam_element_matrices_3D(E, I, rho, A, L):
     
     return K_e, M_e
 
+
 # === Initialize global matrices ===
 K_global = np.zeros((total_dof, total_dof))
 M_global = np.zeros((total_dof, total_dof))
 G_global = np.zeros((total_dof, total_dof))
 
+# === Function for Ge ===
+
+def beam_rdyn(l, sec_prop, Omega):
+    E, rho, Ri, Ra = sec_prop
+    A = np.pi * (Ra**2 - Ri**2)
+    I = np.pi / 64 * ((2*Ra)**4 - (2*Ri)**4)
+    Theta_d = 0.25 * rho * A * (Ra**2 - Ri**2)
+    Theta_p = 0.5 * rho * A * (Ra**2 - Ri**2)
+
+    # === Mass matrix (Mr + Mt) ===
+    t2 = l**2
+    t3 = l**3
+    t4 = A * l * rho * (13.0/35.0)
+    t5 = A * l * rho * (9.0/70.0)
+    t6 = (A * rho * t3) / 105.0
+    t7 = (A * rho * t3) / 140.0
+    t8 = -t7
+    t9 = A * rho * t2 * (11.0/210.0)
+    t10 = A * rho * t2 * (13.0/420.0)
+    t11 = -t9
+    t12 = -t10
+    Mt = np.array([
+        [t4,t11,0,0,t5,t10,0,0],
+        [t11,t6,0,0,t12,t8,0,0],
+        [0,0,t4,t11,0,0,t5,t10],
+        [0,0,t11,t6,0,0,t12,t8],
+        [t5,t12,0,0,t4,t9,0,0],
+        [t10,t8,0,0,t9,t6,0,0],
+        [0,0,t5,t12,0,0,t4,t9],
+        [0,0,t10,t8,0,0,t9,t6]
+    ])
+
+    t2 = 1.0 / l
+    t3 = Theta_p / 10.0
+    t4 = Theta_p * l * (2.0 / 15.0)
+    t5 = (Theta_p * l) / 30.0
+    t6 = -t3
+    t7 = -t5
+    t8 = Theta_p * t2 * (6.0 / 5.0)
+    t9 = -t8
+    Mr = np.array([
+        [t8,t6,0,0,t9,t6,0,0],
+        [t6,t4,0,0,t3,t7,0,0],
+        [0,0,t8,t6,0,0,t9,t6],
+        [0,0,t6,t4,0,0,t3,t7],
+        [t9,t3,0,0,t8,t3,0,0],
+        [t6,t7,0,0,t3,t4,0,0],
+        [0,0,t9,t3,0,0,t8,t3],
+        [0,0,t6,t7,0,0,t3,t4]
+    ])
+    M = Mt + Mr
+
+    # === Gyroscopic matrix ===
+    t2 = 1.0 / l
+    t3 = Theta_d / 10.0
+    t5 = Theta_d * l * (2.0 / 15.0)
+    t6 = (Theta_d * l) / 30.0
+    t4 = -t3
+    t7 = -t5
+    t8 = -t6
+    t9 = Theta_d * t2 * (6.0 / 5.0)
+    t10 = -t9
+    G = np.array([
+        [0,0,t9,t4,0,0,t10,t4],
+        [0,0,t4,t5,0,0,t3,t8],
+        [t10,t3,0,0,t9,t3,0,0],
+        [t3,t7,0,0,t4,t6,0,0],
+        [0,0,t10,t3,0,0,t9,t3],
+        [0,0,t4,t8,0,0,t3,t5],
+        [t9,t4,0,0,t10,t4,0,0],
+        [t3,t6,0,0,t4,t7,0,0]
+    ]) * Omega
+
+    # === Stiffness matrix ===
+    t2 = 1.0 / l
+    t3 = t2**2
+    t4 = t2**3
+    t5 = 2.0 * E * I * t2
+    t6 = 4.0 * E * I * t2
+    t7 = 6.0 * E * I * t3
+    t9 = 12.0 * E * I * t4
+    t8 = -t7
+    t10 = -t9
+    K = np.array([
+        [t9,t8,0,0,t10,t8,0,0],
+        [t8,t6,0,0,t7,t5,0,0],
+        [0,0,t9,t8,0,0,t10,t8],
+        [0,0,t8,t6,0,0,t7,t5],
+        [t10,t7,0,0,t9,t7,0,0],
+        [t8,t5,0,0,t7,t6,0,0],
+        [0,0,t10,t7,0,0,t9,t7],
+        [0,0,t8,t5,0,0,t7,t6]
+    ])
+
+    return M, G, K
+
 
 # === Assembly ===
 for e in range(n_elem):
-    k_e, m_e = beam_element_matrices_3D(E, I, rho, A, dx)
+    sec_prop = [E, rho, Dinner/2, Douter/2]
+    m_e, g_e, k_e = beam_rdyn(dx, sec_prop, Omega)
+
     dof_map = [
         4*e, 4*e+1, 4*e+2, 4*e+3,
         4*e+4, 4*e+5, 4*e+6, 4*e+7
@@ -80,10 +179,13 @@ for e in range(n_elem):
     
     for i in range(8):
         for j in range(8):
-            K_global[dof_map[i], dof_map[j]] += k_e[i, j]
             M_global[dof_map[i], dof_map[j]] += m_e[i, j]
+            K_global[dof_map[i], dof_map[j]] += k_e[i, j]
+            G_global[dof_map[i], dof_map[j]] += g_e[i, j]
 
-print(K_global)         
+
+                          
+
 #=============================================================================================================================
 # === USER INPUT FOR 2 DISCS ===
 print("\n=== Define 2 Rigid Discs ===")
@@ -134,20 +236,6 @@ for disc in discs:
     M_global[dof_theta_y, dof_theta_y] += J
     M_global[dof_theta_z, dof_theta_z] += J
     
-    # Add gyroscopic matrix contributions
-    G_local = np.array([
-        [0,      0,      0, -I * Omega],
-        [0,      0,  I * Omega, 0],
-        [0, -I * Omega, 0,     0],
-        [I * Omega, 0, 0,      0]
-    ])
-
-    # Map local [u_y, theta_z, u_z, theta_y] into global
-    dof_indices = [dof_uy, dof_theta_z, dof_uz, dof_theta_y]
-
-    for i in range(4):
-        for j in range(4):
-            G_global[dof_indices[i], dof_indices[j]] += G_local[i, j]
 
 
 # === USER INPUT FOR FLEXIBLE BEARINGS ===
@@ -231,13 +319,13 @@ print("Numerical Natural frequencies (Hz):")
 for i, f in enumerate(numerical_freqs[:12]):
     print(f"w_{i+1}: {f:.2f} Hz")
 
-# === Plot mode shapes (u_y and u_z) ===    
+# === Plot mode shapes (u_y and u_z) ===
 # ====================================================== PLot 3D ======================================================
 
 # Define number of modeshapes plotted
 n_modes = min(6, len(numerical_freqs))
 x = np.linspace(0, L, n_nodes)
-"""
+
 # creating a 3D Disc
 def create_disc(x_center, y_center, z_center, radius, num_points=30):
     theta = np.linspace(0, 2 * np.pi, num_points)
@@ -298,7 +386,7 @@ for i in range(n_modes):
 
     plt.tight_layout()
     plt.show()
-"""
+
 
 
 # ====================================================== PLot 2D ======================================================
