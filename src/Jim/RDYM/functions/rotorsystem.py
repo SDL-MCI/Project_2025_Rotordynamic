@@ -124,7 +124,8 @@ class RotorSystem:
 
         idx = np.argsort(self.natural_frequencies)
         self.natural_frequencies = self.natural_frequencies[idx]
-        self.mode_shapes = eigvecs[:, idx]
+        self.mode_shapes = eigvecs[self.M_red.shape[0]:, idx]
+
 
     def get_frequencies(self):
         return self.natural_frequencies

@@ -1,12 +1,11 @@
-from functions.rotorSystem import RotorSystem
-from functions.eigenfrequency import RotorSystem
+from functions.rotorsystem import RotorSystem
 from functions.plot import ModePlotter
 # === USER INPUTS ===
 
 beam = {
     'length': 2.4384,        # [m]
-    'D_inner': 0.0125,       # [m]
-    'D_outer': 0.051,        # [m]
+    'D_inner': 0.0250,       # [m]
+    'D_outer': 0.102,        # [m]
     'density': 7833.4,       # [kg/m^3]
     'E': 2.0684e11,          # [Pa]
     'n_elem': 24             # number of beam elements
@@ -23,7 +22,7 @@ bearings = [
     {'pos': 22}
 ]
 
-Omega = 0  # [rad/s] — optional: set to rotation speed
+Omega = 0 #1000/60*2*np.pi  # [rad/s] — optional: set to rotation speed
 
 # === EIGENFREQUENCY ANALYSIS ===
 

@@ -18,7 +18,7 @@ class ModePlotter:
         fig = plt.figure(figsize=(10, 2.5 * n_modes)) 
         for i in range(n_modes):
             full_mode = np.zeros(self.total_dof)
-            eigvec_displacement = mode_shapes[self.total_dof:, i]
+            eigvec_displacement = mode_shapes[:, i]
             full_mode[free_dofs] = np.abs(eigvec_displacement)
 
             v = full_mode[0::4]  # u_y
