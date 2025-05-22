@@ -19,7 +19,7 @@ Dinner = 0.0125 # float(input("Inner diameter of beam [m]: "))
 Douter  = 0.051 # float(input("Outer diameter of beam [m]: "))
 rho = 7833.4 # float(input("Density [kg/m^3]: "))
 E = 2.0684e11 # float(input("Young's modulus [Pa]: "))
-Omega = 1000/60*2*np.pi # float(input("Spin speed [rad/s]: "))
+Omega = 0#1000/60*2*np.pi # float(input("Spin speed [rad/s]: "))
 
 I = (np.pi / 64) * (Douter**4 - Dinner**4)  # Moment of inertia for hollow circular cross-section [m^4]
 A = (np.pi / 4) * (Douter**2 - Dinner**2)   # Cross-sectional area for hollow cylinder [m^2]
@@ -151,23 +151,18 @@ for disc in discs:
 
 
 # === USER INPUT FOR FLEXIBLE BEARINGS ===
+ 
 print("\n=== Define 2 Bearings ===")
 bear1_pos = 4 # float(input("Bearing 1 position [m]: "))   # [m] position along beam
-bear1_k = 1e6 # float(input("Bearing 1 translational stiffness [N/m]: ")) # [N/m] translational stiffness (flexibility of the bearing)
-bear1_kr = 1e6 # float(input("Bearing 1 rotational stiffness [Nm/rad]: ")) # [Nm/rad] rotational stiffness of bearing (optional)
-
 bear2_pos = 22 # float(input("Bearing 2 position [m]: "))
-bear2_k = 1e6 # float(input("Bearing 2 translational stiffness [N/m]: "))
-bear2_kr = 1e6 # float(input("Bearing 2 rotational stiffness [Nm/rad]: "))
-
 
 # === Add Bearings ===
 # Store bearing properties
 bearings = [
-    {'pos': bear1_pos, 'k': bear1_k, 'kr': bear1_kr},
-    {'pos': bear2_pos, 'k': bear2_k, 'kr': bear2_kr}
+    {'pos': bear1_pos},
+    {'pos': bear2_pos}
 ]
-
+"""  
 # === ADD BEARING STIFFNESS TO GLOBAL STIFFNESS MATRIX ===
 
 for b in bearings:
@@ -186,21 +181,20 @@ for b in bearings:
     # Add rotational stiffness
     K_global[dof_theta_y, dof_theta_y] += b['kr']
     K_global[dof_theta_z, dof_theta_z] += b['kr']
-    
+""" 
 
     
 #=============================================================================================================================  
    
 # === Boundary conditions (simply supported at both ends in Y and Z) ===
-# Fix displacements u_y, u_z at node 0 and node n_nodes-1
+# Fix displacements u_y, u_z at 2 bearings
 constrained_dofs = [
-    0, 2,                      # u_y0, u_z0
-    
-    dof_per_node*(n_nodes-1),  # u_y at last node
-    dof_per_node*(n_nodes-1)+2 # u_z at last node
+    4 * bear1_pos, 4 * bear1_pos + 2,   # u_y, u_z at bearing 1
+    4 * bear2_pos, 4 * bear2_pos + 2    # u_y, u_z at bearing 2
 ]
 
 free_dofs = np.setdiff1d(np.arange(total_dof), constrained_dofs)
+print(total_dof)
 
 # === Reduce matrices ===
 K_reduced = K_global[np.ix_(free_dofs, free_dofs)]
@@ -281,9 +275,11 @@ for i in range(n_modes):
         ax.add_collection3d(disc_poly)
 
     # Bearings
+
     for b in bearings:
         node = int(b['pos'])
         ax.scatter(x[node], y_def[node], z_def[node], c='r', s=60, label='Bearing' if b == bearings[0] else "")
+
 
     # Nodes
     ax.scatter(x, y_def, z_def, c='yellow', edgecolors='k', s=30, label='Node')
