@@ -2,23 +2,27 @@
 """
 Created on Wed May  7 15:14:36 2025
 
-@author: kimly
+@author: kimly, Busoj
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eigh, eig
+from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
 
 # === USER INPUT FOR BEAM AND MATERIAL PROPERTIES ===
 print("\n=== Define the beam and material properties ===")
-L = float(input("Total beam length [m]: "))
-E = float(input("Young's modulus [Pa]: "))
-rho = float(input("Density [kg/m^3]: "))
-D  = float(input("Diameter of beam [m]: "))
-Omega = float(input("Spin speed [rad/s]: "))
+L = 2438.4 # float(input("Total beam length [mm]: "))
+Dinner = 12.5*2 # float(input("Inner diameter of beam [mm]: "))
+Douter  = 51*2 # float(input("Outer diameter of beam [mm]: "))
+rho = 7.8334e-6 # float(input("Density [kg/mm^3]: "))
+E = 2.0684e8 # float(input("Young's modulus [MPa]: "))
+Omega = 0#1000/60*2*np.pi # float(input("Spin speed [rad/s]: "))
 
-I = (np.pi * D**4) / 64     # Moment of inertia for circular cross-section [m^4]
-A = (np.pi * D**2) / 4      # Cross-sectional area [m^2]
+I = (np.pi / 64) * (Douter**4 - Dinner**4)  # Moment of inertia for hollow circular cross-section [m^4]
+A = (np.pi / 4) * (Douter**2 - Dinner**2)   # Cross-sectional area for hollow cylinder [m^2]
 
 
 # === FEM discretization ===
@@ -83,22 +87,28 @@ for e in range(n_elem):
 #=============================================================================================================================
 # === USER INPUT FOR 2 DISCS ===
 print("\n=== Define 2 Rigid Discs ===")
-disc1_pos = float(input("Disc 1 position [m]: "))   # [m] position along beam
-disc1_diam = float(input("Disc 1 diameter [m]: "))   # [m] diameter of rigid disc
-disc1_thick = float(input("Disc 1 thickness [m]: "))   # [m] axial thickness
-disc1_density = float(input("Disc 1 density [kg/m^3]: "))   # [kg/m³] (same as beam material)
+disc1_pos = 10  # float(input("Disc 1 position [m]: "))   # [m] position along beam
+disc1_diam = 0.1047 # float(input("Disc 1 diameter [m]: "))   # [m] diameter of rigid disc
+disc1_thick = 0.04474 # float(input("Disc 1 thickness [m]: "))   # [m] axial thickness
+disc1_density = 7833.4 # float(input("Disc 1 density [kg/m^3]: "))   # [kg/m³] (same as beam material)
 
-disc2_pos = float(input("Disc 2 position [m]: "))
-disc2_diam = float(input("Disc 2 diameter [m]: "))
-disc2_thick = float(input("Disc 2 thickness [m]: "))
-disc2_density = float(input("Disc 2 density [kg/m^3]: "))
+disc2_pos = 13 # float(input("Disc 2 position [m]: "))
+disc2_diam = 0.1047 # float(input("Disc 2 diameter [m]: "))
+disc2_thick = 0.04474 # float(input("Disc 2 thickness [m]: "))
+disc2_density = 7833.4 # float(input("Disc 2 density [kg/m^3]: "))
+
+disc3_pos = 16 # float(input("Disc 2 position [m]: "))
+disc3_diam = 0.1047 # float(input("Disc 2 diameter [m]: "))
+disc3_thick = 0.04474 # float(input("Disc 2 thickness [m]: "))
+disc3_density = 7833.4 # float(input("Disc 2 density [kg/m^3]: "))
 
 
 # === Add Discs ===
 # Store all disc properties in a list of dictionaries
 discs = [
     {'pos': disc1_pos, 'diameter': disc1_diam, 'thickness': disc1_thick, 'density': disc1_density},
-    {'pos': disc2_pos, 'diameter': disc2_diam, 'thickness': disc2_thick, 'density': disc2_density}
+    {'pos': disc2_pos, 'diameter': disc2_diam, 'thickness': disc2_thick, 'density': disc2_density},
+    {'pos': disc3_pos, 'diameter': disc3_diam, 'thickness': disc3_thick, 'density': disc3_density}
 ]
 
 # === ADD DISCS TO GLOBAL MASS MATRIX ===
@@ -109,8 +119,7 @@ for disc in discs:
     I = 0.5 * m * r**2 # Polar moment of inertia for the disc (used in gyroscopic effects)
 
     # Map position to nearest node
-    node = int(round(disc['pos'] / dx))
-    node = np.clip(node, 0, n_nodes - 1)  # Ensure within bounds
+    node = np.clip(disc['pos'], 0, n_nodes - 1)  # Ensure within bounds
 
     dof_uy = 4 * node   # v (Y translation)
     dof_theta_z = dof_uy + 1  # θz (rotation about Z)
@@ -140,56 +149,31 @@ for disc in discs:
         for j in range(4):
             G_global[dof_indices[i], dof_indices[j]] += G_local[i, j]
 
-      
-
 
 # === USER INPUT FOR FLEXIBLE BEARINGS ===
+ 
 print("\n=== Define 2 Bearings ===")
-bear1_pos = float(input("Bearing 1 position [m]: "))   # [m] position along beam
-bear1_k = float(input("Bearing 1 translational stiffness [N/m]: ")) # [N/m] translational stiffness (flexibility of the bearing)
-bear1_kr = float(input("Bearing 1 rotational stiffness [Nm/rad]: ")) # [Nm/rad] rotational stiffness of bearing (optional)
-
-bear2_pos = float(input("Bearing 2 position [m]: "))
-bear2_k = float(input("Bearing 2 translational stiffness [N/m]: "))
-bear2_kr = float(input("Bearing 2 rotational stiffness [Nm/rad]: "))
-
+bear1_pos = 4 # float(input("Bearing 1 position [m]: "))   # [m] position along beam
+bear2_pos = 22 # float(input("Bearing 2 position [m]: "))
 
 # === Add Bearings ===
 # Store bearing properties
 bearings = [
-    {'pos': bear1_pos, 'k': bear1_k, 'kr': bear1_kr},
-    {'pos': bear2_pos, 'k': bear2_k, 'kr': bear2_kr}
+    {'pos': bear1_pos},
+    {'pos': bear2_pos}
 ]
-
-# === ADD BEARING STIFFNESS TO GLOBAL STIFFNESS MATRIX ===
-for b in bearings:
-    node = int(round(b['pos'] / dx))
-    node = np.clip(node, 0, n_nodes - 1)
-
-    dof_v = 4 * node   # v (Y direction)
-    dof_theta_z = dof_v + 1   # θz (about Z)
-    dof_w = dof_v + 2    # w (Z direction)
-    dof_theta_y = dof_v + 3   # θy (about Y)
-
-    # Add translational stiffness
-    K_global[dof_v, dof_v] += b['k']
-    K_global[dof_w, dof_w] += b['k']
-    
-    # Add rotational stiffness
-    K_global[dof_theta_y, dof_theta_y] += b['kr']
-    K_global[dof_theta_z, dof_theta_z] += b['kr']
-
     
 #=============================================================================================================================  
    
 # === Boundary conditions (simply supported at both ends in Y and Z) ===
-# Fix displacements u_y, u_z at node 0 and node n_nodes-1
+# Fix displacements u_y, u_z at 2 bearings
 constrained_dofs = [
-    0, 2,                      # u_y0, u_z0
-    dof_per_node*(n_nodes-1),  # u_y at last node
-    dof_per_node*(n_nodes-1)+2 # u_z at last node
+    4 * bear1_pos, 4 * bear1_pos + 2,   # u_y, u_z at bearing 1
+    4 * bear2_pos, 4 * bear2_pos + 2    # u_y, u_z at bearing 2
 ]
+
 free_dofs = np.setdiff1d(np.arange(total_dof), constrained_dofs)
+print(total_dof)
 
 # === Reduce matrices ===
 K_reduced = K_global[np.ix_(free_dofs, free_dofs)]
@@ -221,42 +205,112 @@ eigvecs = eigvecs[:, sorted_indices]
 numerical_freqs = numerical_freqs[sorted_indices]
 
 
-# === Print natural frequencies ===
+# ====================================================== Print natural frequencies ======================================================
 print("Numerical Natural frequencies (Hz):")
-for i, f in enumerate(numerical_freqs[:6]):
+for i, f in enumerate(numerical_freqs[:12]):
     print(f"w_{i+1}: {f:.2f} Hz")
 
 # === Plot mode shapes (u_y and u_z) ===
+# ====================================================== PLot 3D ======================================================
+
+# Define number of modeshapes plotted
+n_modes = min(6, len(numerical_freqs))
+x = np.linspace(0, L, n_nodes)
+
+# creating a 3D Disc
+def create_disc(x_center, y_center, z_center, radius, num_points=30):
+    theta = np.linspace(0, 2 * np.pi, num_points)
+    y = y_center + radius * np.cos(theta)
+    z = z_center + radius * np.sin(theta)
+    x = np.full_like(y, x_center)
+    return list(zip(x, y, z))
+
+# 3D-Plot for every modeshape
+for i in range(n_modes):
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    full_mode = np.zeros(total_dof)
+    eigvec_displacement = eigvecs[M_reduced.shape[0]:, i]
+    full_mode[free_dofs] = np.abs(eigvec_displacement)
+
+    v = full_mode[0::4]
+    w = full_mode[2::4]
+
+    y_def = v
+    z_def = w
+
+    # Axis not deformed
+    ax.plot(x, np.zeros_like(x), np.zeros_like(x), 'k--', linewidth=1, label='Axis')
+
+    # Axis defomrmed
+    ax.plot(x, y_def, z_def, 'y.-', label=f'Mode {i+1}')
+
+    # Discs
+    for disc in discs:
+        node = int(disc['pos'])
+        disc_points = create_disc(x[node], y_def[node], z_def[node], radius=0.05)
+        disc_poly = Poly3DCollection([disc_points], color='skyblue', alpha=0.5)
+        ax.add_collection3d(disc_poly)
+
+    # Bearings
+
+    for b in bearings:
+        node = int(b['pos'])
+        ax.scatter(x[node], y_def[node], z_def[node], c='r', s=60, label='Bearing' if b == bearings[0] else "")
+
+
+    # Nodes
+    ax.scatter(x, y_def, z_def, c='yellow', edgecolors='k', s=30, label='Node')
+    for idx in range(n_nodes):
+        ax.text(x[idx], y_def[idx], z_def[idx], str(idx), fontsize=6)
+
+    ax.set_xlim(0, L)
+    ax.set_ylim(-0.2, 0.2)
+    ax.set_zlim(-0.2, 0.2)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title(f"3D Mode Shape {i+1} ({numerical_freqs[i]:.2f} Hz)")
+    ax.view_init(elev=20, azim=135)
+    ax.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+"""
+
+# ====================================================== PLot 2D ======================================================
 x = np.linspace(0, L, n_nodes)
 n_modes = min(6, len(numerical_freqs))
 
 fig = plt.figure(figsize=(10, 2.5 * n_modes)) 
 for i in range(n_modes):
     full_mode = np.zeros(total_dof)
-    eigvec_displacement = eigvecs[M_reduced.shape[0]:, i]  # only last N entries (displacement mode shapes), first N entries: velocities
-    full_mode[free_dofs] = eigvec_displacement
-    
+    eigvec_displacement = eigvecs[M_reduced.shape[0]:, i]
+    full_mode[free_dofs] = np.abs(eigvec_displacement)
+
     v = full_mode[0::4]
     w = full_mode[2::4]
-    
+
     ax = fig.add_subplot(n_modes, 1, i+1)
-            # Plot mode shapes
     plt.plot(x, v, '-o', label='u_y')
     plt.plot(x, w, '--', label='u_z')
-    
-#================================================================================================================
-    # === Mark disc positions ===
+
+    # === Mark disc positions (now using node indices directly) ===
     for disc in discs:
-        disc_node = int(round(disc['pos'] / dx))
-        disc_x = disc_node * dx
+        disc_node = int(disc['pos'])
+        disc_x = x[disc_node]
         plt.axvline(x=disc_x, color='k', linestyle='--', label='Disc' if i == 0 else "")
-    
-    # === Mark bearing positions ===
+        plt.plot(disc_x, 0, 'ko', markerfacecolor='blue')
+
+    # === Mark bearing positions (also node indices) ===
     for b in bearings:
-        bear_node = int(round(b['pos'] / dx))
-        bear_x = bear_node * dx
+        bear_node = int(b['pos'])
+        bear_x = x[bear_node]
         plt.axvline(x=bear_x, color='g', linestyle='-.', label='Bearing' if i == 0 else "")
-#================================================================================================================
+        plt.plot(bear_x, 0, 'go', markerfacecolor='orange')
+
     plt.title(f"Mode {i+1}: {numerical_freqs[i]:.2f} Hz")
     plt.xlabel("Beam length (m)")
     plt.ylabel("Displacement")
@@ -265,3 +319,4 @@ for i in range(n_modes):
 
 plt.tight_layout()
 plt.show()
+"""
