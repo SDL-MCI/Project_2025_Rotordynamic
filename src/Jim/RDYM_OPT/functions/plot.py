@@ -50,7 +50,7 @@ class ModePlotter:
         plt.show()
 
     def plot_3D_modes(self, n_modes=6):
-        from mpl_toolkits.mplot3d import Axes3D  # only used in this function
+        from mpl_toolkits.mplot3d import Axes3D
 
         freqs = self.rotor.get_frequencies()
         mode_shapes, free_dofs = self.rotor.get_mode_shapes()
@@ -62,7 +62,7 @@ class ModePlotter:
             ax = fig.add_subplot(111, projection='3d')
 
             full_mode = np.zeros(self.total_dof)
-            eigvec_displacement = mode_shapes[self.total_dof:, i]
+            eigvec_displacement = mode_shapes[:, i]  # Fixed line
             full_mode[free_dofs] = np.abs(eigvec_displacement)
 
             v = full_mode[0::4]

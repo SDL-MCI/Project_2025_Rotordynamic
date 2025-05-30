@@ -54,10 +54,10 @@ def objective(x):
         delta34 = mean4 - mean3
 
         cost = (
-            10 * (spread1 + spread2 + spread3 + spread4)
-            - 0.5 * (delta12 + delta23 + delta34)
-            + 5 * mean4
-            - 100 * mean1
+            10 * (spread1 + spread2 + spread3 + spread4)   # Penalize frequency spread within groups
+            - 0.5 * (delta12 + delta23 + delta34)          # Reward frequency separation between groups
+            + 5 * mean4                                    # Penalize high frequency in group 4
+            - 20 * mean1                                   # Reward high frequency in group 1
         )
 
         return cost
@@ -67,7 +67,7 @@ def objective(x):
 
 # === Run Optimization with Given Bounds ===
 def run_optimization(bounds):
-    result = differential_evolution(objective, bounds, strategy='best1bin', maxiter=50, popsize=15, disp=True)
+    result = differential_evolution(objective, bounds, strategy='best1bin', maxiter=10, popsize=15, disp=True)
 
     length, D_outer, radius, thickness, d1_, d2_, b1_, b2_, rpm = result.x
     density = 7833.4
