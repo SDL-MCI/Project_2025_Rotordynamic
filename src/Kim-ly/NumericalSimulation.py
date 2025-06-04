@@ -15,19 +15,19 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 # === USER INPUT FOR BEAM AND MATERIAL PROPERTIES ===
 print("\n=== Define the beam and material properties ===")
-L = 0.9502 # float(input("Total beam length [m]: "))
-Dinner = 0 # float(input("Inner diameter of beam [m]: "))
-Douter  = 0.016 # float(input("Outer diameter of beam [m]: "))
-rho = 7.8334e3 # float(input("Density [kg/m^3]: "))
-E = 2.0684e11 # float(input("Young's modulus [Pa]: "))
-Omega = 56.97    #1000/60*2*np.pi # float(input("Spin speed [rad/s]: "))
+L = 1.0 # float(input("Total beam length [m]: "))
+Dinner = 0.0 # float(input("Inner diameter of beam [m]: "))
+Douter  = 16e-3 # float(input("Outer diameter of beam [m]: "))
+rho = 7.85e3 # float(input("Density [kg/m^3]: "))
+E = 2.0e11 # float(input("Young's modulus [Pa]: "))
+Omega = 1000/60*2*np.pi    #1000/60*2*np.pi # float(input("Spin speed [rad/s]: "))
 
 I = (np.pi / 64) * (Douter**4 - Dinner**4)  # Moment of inertia for hollow circular cross-section [m^4]
 A = (np.pi / 4) * (Douter**2 - Dinner**2)   # Cross-sectional area for hollow cylinder [m^2]
 
 
 # === FEM discretization ===
-n_elem = 20
+n_elem = 24
 n_nodes = n_elem + 1
 dof_per_node = 4                            # 4 DOF: u_y, theta_z, u_z, theta_y
 total_dof = dof_per_node * n_nodes
@@ -147,10 +147,10 @@ G_global = np.zeros((total_dof, total_dof))
 for e in range(n_elem):
     k_e, m_e, g_e = beam_element_matrices_3D(E, I, rho, A, l)
     dof_map = [
-        4*e, 4*e+1, 4*e+2, 4*e+3,
-        4*e+4, 4*e+5, 4*e+6, 4*e+7
+        4*e+4, 4*e+5, 4*e+6, 4*e+7,
+        4*e+0, 4*e+1, 4*e+2, 4*e+3
     ]
-    
+
     for i in range(8):
         for j in range(8):
             K_global[dof_map[i], dof_map[j]] += k_e[i, j]
@@ -161,15 +161,15 @@ for e in range(n_elem):
 #=============================================================================================================================
 # === USER INPUT FOR 2 DISCS ===
 print("\n=== Define 2 Rigid Discs ===")
-disc1_pos = 6  # float(input("Disc 1 position [m]: "))   # [m] position along beam
-disc1_diam = 0.1657    # float(input("Disc 1 diameter [m]: "))   # [m] diameter of rigid disc
-disc1_thick = 0.006  # float(input("Disc 1 thickness [m]: "))   # [m] axial thickness
-disc1_density = 7833.4 # float(input("Disc 1 density [kg/m^3]: "))   # [kg/m³] (same as beam material)
+disc1_pos = 6-1  # float(input("Disc 1 position [m]: "))   # [m] position along beam
+disc1_diam = 0.2    # float(input("Disc 1 diameter [m]: "))   # [m] diameter of rigid disc
+disc1_thick = 0.01  # float(input("Disc 1 thickness [m]: "))   # [m] axial thickness
+disc1_density = 7850 # float(input("Disc 1 density [kg/m^3]: "))   # [kg/m³] (same as beam material)
 
-disc2_pos = 14 # float(input("Disc 2 position [m]: "))
-disc2_diam = 0.1657      # float(input("Disc 2 diameter [m]: "))
-disc2_thick = 0.006  # float(input("Disc 2 thickness [m]: "))
-disc2_density = 7833.4 # float(input("Disc 2 density [kg/m^3]: "))
+disc2_pos = 14-1 # float(input("Disc 2 position [m]: "))
+disc2_diam = 0.2      # float(input("Disc 2 diameter [m]: "))
+disc2_thick = 0.01  # float(input("Disc 2 thickness [m]: "))
+disc2_density = 7850 # float(input("Disc 2 density [kg/m^3]: "))
 
 #disc3_pos = 16 # float(input("Disc 2 position [m]: "))
 #disc3_diam = 0.1047 # float(input("Disc 2 diameter [m]: "))
@@ -224,8 +224,8 @@ for disc in discs:
 # === USER INPUT FOR FLEXIBLE BEARINGS ===
 
 print("\n=== Define 2 Bearings ===")
-bear1_pos = 5 # float(input("Bearing 1 position [m]: "))   # [m] position along beam
-bear2_pos = 15 # float(input("Bearing 2 position [m]: "))
+bear1_pos = 4-1 # float(input("Bearing 1 position [m]: "))   # [m] position along beam
+bear2_pos = 22-1 # float(input("Bearing 2 position [m]: "))
 
 # === Add Bearings ===
 # Store bearing properties
@@ -246,27 +246,47 @@ constrained_dofs = [
 free_dofs = np.setdiff1d(np.arange(total_dof), constrained_dofs)
 print(total_dof)
 
-# === Reduce matrices ===
-K_reduced = K_global[np.ix_(free_dofs, free_dofs)]
-M_reduced = M_global[np.ix_(free_dofs, free_dofs)]
-G_reduced = G_global[np.ix_(free_dofs, free_dofs)]
+for dof in constrained_dofs:
+    M_global[dof, :] = 0.0
+    M_global[:, dof] = 0.0
+    M_global[dof, dof] = 1.0  # Set diagonal to 1 for constrained DOFs
+
+    K_global[dof, :] = 0.0
+    K_global[:, dof] = 0.0
+    K_global[dof, dof] = 1.0  # Set diagonal to 1 for constrained DOFs
+
+    G_global[dof, :] = 0.0
+    G_global[:, dof] = 0.0
+    G_global[dof, dof] = 0.0  # Set diagonal to 0 for constrained DOFs
+
+M_reduced = M_global
+K_reduced = K_global
+G_reduced = G_global
+
+eigvals0, phi0 = eig(K_reduced, M_reduced)
+fn0 = np.sqrt(np.real(eigvals0))/2.0/np.pi
+fn0 = np.sort(fn0)
+fn0 = [f for f in fn0 if not (f > 0.99/(2.0*np.pi) and f < 1.01/(2.0*np.pi))]  # Filter out BCs
+
+print("Natural frequencies (Hz)")
+print(fn0[0:10])
 
 I = np.eye(M_reduced.shape[0])                  # Identity matrix
 
 # Build A and B matrices
-A_mat = np.block([
-    [G_reduced, M_reduced],
+M_hat = np.block([
+    [Omega * G_reduced, M_reduced],
     [I, np.zeros_like(M_reduced)]
 ])
 
-B_mat = np.block([
+K_hat = np.block([
     [K_reduced, np.zeros_like(M_reduced)],
     [np.zeros_like(M_reduced), -I]
 ])
 
 
 # Solve generalized eigenvalue problem: A x_dot + B x = 0
-eigvals, eigvecs = eig(-B_mat, A_mat)  # Notice negative sign to match equation
+eigvals, eigvecs = eig(K_hat, -M_hat)  # Notice negative sign to match equation
 
 # Extract natural frequencies from eigenvalues
 omega = np.abs(np.imag(eigvals))  # rad/s
@@ -276,7 +296,7 @@ numerical_freqs = omega / (2 * np.pi)       # Hz
 sorted_indices = np.argsort(numerical_freqs)
 eigvecs = eigvecs[:, sorted_indices]
 numerical_freqs = numerical_freqs[sorted_indices]
-
+numerical_freqs = [f for f in numerical_freqs if not (f < 0.2*2.0*np.pi)]  # Filter out BCs
 
 # ====================================================== Print natural frequencies ======================================================
 print("Numerical Natural frequencies (Hz):")
@@ -285,6 +305,12 @@ for i, f in enumerate(numerical_freqs[:12]):
 
 # === Plot mode shapes (u_y and u_z) ===
 # ====================================================== PLot 3D ======================================================
+
+# ============================================================================================
+# ============================================================================================
+# ========TODO: Fix extraction of mode shapes now that the system is not reduced again========
+# ============================================================================================
+# ============================================================================================
 
 # Define number of modeshapes plotted
 n_modes = min(6, len(numerical_freqs))
