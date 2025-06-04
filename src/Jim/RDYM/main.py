@@ -1,28 +1,27 @@
 from functions.rotorsystem import RotorSystem
 from functions.plot import ModePlotter
+import numpy as np
 # === USER INPUTS ===
 
 beam = {
-    'length': 2.4384,        # [m]
-    'D_inner': 0.0250,       # [m]
-    'D_outer': 0.102,        # [m]
-    'density': 7833.4,       # [kg/m^3]
-    'E': 2.0684e11,          # [Pa]
+    'length': 1,        # [m]
+    'D_outer': 0.016,        # [m]
+    'density': 7850,       # [kg/m^3]
+    'E': 2.0e11,          # [Pa]
     'n_elem': 24             # number of beam elements
 }
 
 discs = [
-    {'pos': 10, 'diameter': 0.1047, 'thickness': 0.04474, 'density': 7833.4},
-    {'pos': 13, 'diameter': 0.1047, 'thickness': 0.04474, 'density': 7833.4},
-    {'pos': 16, 'diameter': 0.1047, 'thickness': 0.04474, 'density': 7833.4}
+    {'pos': 5, 'diameter': 0.2, 'thickness': 0.01, 'density': 7850},
+    {'pos': 13, 'diameter': 0.2, 'thickness': 0.01, 'density': 7850}
 ]
 
 bearings = [
-    {'pos': 4},
-    {'pos': 22}
+    {'pos': 3},
+    {'pos': 21}
 ]
 
-Omega = 0 #1000/60*2*np.pi  # [rad/s] — optional: set to rotation speed
+Omega = 1000/60*2*np.pi  # [rad/s] — optional: set to rotation speed
 
 # === EIGENFREQUENCY ANALYSIS ===
 

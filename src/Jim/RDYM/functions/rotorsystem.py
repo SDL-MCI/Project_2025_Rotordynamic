@@ -2,9 +2,8 @@ import numpy as np
 from scipy.linalg import eig
 
 class RotorSystem:
-    def __init__(self, beam, discs, bearings, Omega=0):
+    def __init__(self, beam, discs, bearings, Omega):
         self.L = beam['length']
-        self.Dinner = beam['D_inner']
         self.Douter = beam['D_outer']
         self.rho = beam['density']
         self.E = beam['E']
@@ -14,8 +13,8 @@ class RotorSystem:
         self.discs = discs
         self.bearings = bearings
 
-        self.I = (np.pi / 64) * (self.Douter**4 - self.Dinner**4)
-        self.A = (np.pi / 4) * (self.Douter**2 - self.Dinner**2)
+        self.I = (np.pi / 64) * (self.Douter**4)
+        self.A = (np.pi / 4) * (self.Douter**2)
         self.n_nodes = self.n_elem + 1
         self.dof_per_node = 4
         self.total_dof = self.n_nodes * self.dof_per_node
@@ -26,105 +25,188 @@ class RotorSystem:
         self.G_global = np.zeros((self.total_dof, self.total_dof))
 
     def beam_element_matrices_3D(self):
-        L = self.dx
+        l = self.dx
         E, I = self.E, self.I
         rho, A = self.rho, self.A
+        Douter= self.Douter
 
-        K_local = (E * I / L**3) * np.array([
-            [12, 6*L, -12, 6*L],
-            [6*L, 4*L**2, -6*L, 2*L**2],
-            [-12, -6*L, 12, -6*L],
-            [6*L, 2*L**2, -6*L, 4*L**2]
+        Theta_p = 0.5 * rho * A * ((Douter / 2)**2)
+        Theta_d = 0.25 * rho * A * ((Douter / 2)**2)
+
+        t2 = l**2
+        t3 = l**3
+        t4 = A * l * rho * (13.0 / 35.0)
+        t5 = A * l * rho * (9.0 / 70.0)
+        t6 = (A * rho * t3) / 105.0
+        t7 = (A * rho * t3) / 140.0
+        t8 = -t7
+        t9 = A * rho * t2 * (11.0 / 210.0)
+        t10 = A * rho * t2 * (13.0 / 420.0)
+        t11 = -t9
+        t12 = -t10
+
+        Mt = np.array([
+            [t4,t11,0,0,t5,t10,0,0],
+            [t11,t6,0,0,t12,t8,0,0],
+            [0,0,t4,t11,0,0,t5,t10],
+            [0,0,t11,t6,0,0,t12,t8],
+            [t5,t12,0,0,t4,t9,0,0],
+            [t10,t8,0,0,t9,t6,0,0],
+            [0,0,t5,t12,0,0,t4,t9],
+            [0,0,t10,t8,0,0,t9,t6]
         ])
 
-        M_local = (rho * A * L / 420) * np.array([
-            [156, 22*L, 54, -13*L],
-            [22*L, 4*L**2, 13*L, -3*L**2],
-            [54, 13*L, 156, -22*L],
-            [-13*L, -3*L**2, -22*L, 4*L**2]
+        t2 = 1.0 / l
+        t3 = Theta_p / 10.0
+        t4 = Theta_p * l * (2.0 / 15.0)
+        t5 = (Theta_p * l) / 30.0
+        t6 = -t3
+        t7 = -t5
+        t8 = Theta_p * t2 * (6.0 / 5.0)
+        t9 = -t8
+
+        Mr = np.array([
+            [t8,t6,0,0,t9,t6,0,0],
+            [t6,t4,0,0,t3,t7,0,0],
+            [0,0,t8,t6,0,0,t9,t6],
+            [0,0,t6,t4,0,0,t3,t7],
+            [t9,t3,0,0,t8,t3,0,0],
+            [t6,t7,0,0,t3,t4,0,0],
+            [0,0,t9,t3,0,0,t8,t3],
+            [0,0,t6,t7,0,0,t3,t4]
         ])
 
-        K_e = np.zeros((8, 8))
-        M_e = np.zeros((8, 8))
+        M = Mr + Mt
 
-        K_e[np.ix_([0,1,4,5],[0,1,4,5])] = K_local
-        M_e[np.ix_([0,1,4,5],[0,1,4,5])] = M_local
-        K_e[np.ix_([2,3,6,7],[2,3,6,7])] = K_local
-        M_e[np.ix_([2,3,6,7],[2,3,6,7])] = M_local
+        t3 = Theta_d / 10.0
+        t4 = -t3
+        t5 = Theta_d * l * (2.0 / 15.0)
+        t6 = (Theta_d * l) / 30.0
+        t7 = -t5
+        t8 = -t6
+        t9 = Theta_d * t2 * (6.0 / 5.0)
+        t10 = -t9
 
-        return K_e, M_e
+        G = np.array([
+            [0,0,t9,t4,0,0,t10,t4],
+            [0,0,t4,t5,0,0,t3,t8],
+            [t10,t3,0,0,t9,t3,0,0],
+            [t3,t7,0,0,t4,t6,0,0],
+            [0,0,t10,t3,0,0,t9,t3],
+            [0,0,t4,t8,0,0,t3,t5],
+            [t9,t4,0,0,t10,t4,0,0],
+            [t3,t6,0,0,t4,t7,0,0]
+        ])
+
+        t2 = 1.0 / l
+        t3 = t2**2
+        t4 = t2**3
+        t5 = 2 * E * I * t2
+        t6 = 4 * E * I * t2
+        t7 = 6 * E * I * t3
+        t8 = -t7
+        t9 = 12 * E * I * t4
+        t10 = -t9
+
+        K = np.array([
+            [t9,t8,0,0,t10,t8,0,0],
+            [t8,t6,0,0,t7,t5,0,0],
+            [0,0,t9,t8,0,0,t10,t8],
+            [0,0,t8,t6,0,0,t7,t5],
+            [t10,t7,0,0,t9,t7,0,0],
+            [t8,t5,0,0,t7,t6,0,0],
+            [0,0,t10,t7,0,0,t9,t7],
+            [0,0,t8,t5,0,0,t7,t6]
+        ])
+
+        return K, M, G
 
     def assemble_global_matrices(self):
         for e in range(self.n_elem):
-            K_e, M_e = self.beam_element_matrices_3D()
-            dof_map = [4*e+i for i in range(8)]
+            K_e, M_e, G_e = self.beam_element_matrices_3D()
+            dof_map = [
+                4*e+4, 4*e+5, 4*e+6, 4*e+7,
+                4*e+0, 4*e+1, 4*e+2, 4*e+3
+            ]
 
             for i in range(8):
                 for j in range(8):
                     self.K_global[dof_map[i], dof_map[j]] += K_e[i, j]
                     self.M_global[dof_map[i], dof_map[j]] += M_e[i, j]
+                    self.G_global[dof_map[i], dof_map[j]] += G_e[i, j]
 
         self.add_discs()
 
     def add_discs(self):
-        for disc in self.discs:
-            r = disc['diameter'] / 2
-            m = disc['density'] * np.pi * r**2 * disc['thickness']
-            J = (1/4) * m * r**2 + (1/12) * m * disc['thickness']**2
-            I_gyro = 0.5 * m * r**2
+            for disc in self.discs:
+                r = disc['diameter'] / 2
+                m = disc['density'] * np.pi * r**2 * disc['thickness']
+                Theta_d = (1/4) * m * r**2
+                Theta_p = 0.5 * m * r**2
 
-            node = int(np.clip(disc['pos'], 0, self.n_nodes - 1))
-            dofs = [4*node + i for i in range(4)]
+                node = int(np.clip(disc['pos'], 0, self.n_nodes - 1))
+                dofs = [4*node + i for i in range(4)]
 
-            self.M_global[dofs[0], dofs[0]] += m
-            self.M_global[dofs[2], dofs[2]] += m
-            self.M_global[dofs[1], dofs[1]] += J
-            self.M_global[dofs[3], dofs[3]] += J
+                M_local = np.diag([m, Theta_p, m, Theta_p])
 
-            G_local = np.array([
-                [0, 0, 0, -I_gyro * self.Omega],
-                [0, 0, I_gyro * self.Omega, 0],
-                [0, -I_gyro * self.Omega, 0, 0],
-                [I_gyro * self.Omega, 0, 0, 0]
-            ])
+                G_local = np.zeros((4, 4))
+                G_local[1, 3] = -Theta_d * self.Omega
+                G_local[3, 1] = Theta_d * self.Omega
 
-            for i in range(4):
-                for j in range(4):
-                    self.G_global[dofs[i], dofs[j]] += G_local[i, j]
+                for i in range(4):
+                    for j in range(4):
+                        self.M_global[dofs[i], dofs[j]] += M_local[i, j]
+                        self.G_global[dofs[i], dofs[j]] += G_local[i, j]
+
 
     def apply_boundary_conditions(self):
-        self.constrained_dofs = []
-        for bearing in self.bearings:
-            node = int(np.clip(bearing['pos'], 0, self.n_nodes - 1))
-            self.constrained_dofs += [4*node, 4*node+2]  # uy and uz
+
+        self.constrained_dofs = [
+            4 * self.bearings[0]['pos'], 4 * self.bearings[0]['pos'] + 2,   # u_y, u_z at bearing 1
+            4 * self.bearings[1]['pos'], 4 * self.bearings[1]['pos'] + 2    # u_y, u_z at bearing 2
+        ]
 
         all_dofs = np.arange(self.total_dof)
         self.free_dofs = np.setdiff1d(all_dofs, self.constrained_dofs)
 
-        self.K_red = self.K_global[np.ix_(self.free_dofs, self.free_dofs)]
-        self.M_red = self.M_global[np.ix_(self.free_dofs, self.free_dofs)]
-        self.G_red = self.G_global[np.ix_(self.free_dofs, self.free_dofs)]
+        for dof in self.constrained_dofs:
+            self.M_global[dof, :] = 0.0
+            self.M_global[:, dof] = 0.0
+            self.M_global[dof, dof] = 1.0  # Set diagonal to 1 for constrained DOFs
+
+            self.K_global[dof, :] = 0.0
+            self.K_global[:, dof] = 0.0
+            self.K_global[dof, dof] = 1.0  # Set diagonal to 1 for constrained DOFs
+
+            self.G_global[dof, :] = 0.0
+            self.G_global[:, dof] = 0.0
+            self.G_global[dof, dof] = 0.0  # Set diagonal to 0 for constrained DOFs
+
+        self.M_reduced = self.M_global
+        self.K_reduced = self.K_global
+        self.G_reduced = self.G_global
 
     def solve_eigenproblem(self):
-        I = np.eye(len(self.M_red))
+        I = np.eye(len(self.M_reduced[0]))
 
         A = np.block([
-            [self.G_red, self.M_red],
-            [I, np.zeros_like(self.M_red)]
+            [self.Omega * self.G_reduced, self.M_reduced],
+            [I, np.zeros_like(self.M_reduced)]
         ])
 
         B = np.block([
-            [self.K_red, np.zeros_like(self.M_red)],
-            [np.zeros_like(self.M_red), -I]
+            [self.K_reduced, np.zeros_like(self.M_reduced)],
+            [np.zeros_like(self.M_reduced), -I]
         ])
 
-        eigvals, eigvecs = eig(-B, A)
+        eigvals, eigvecs = eig(B, -A)
         omega = np.abs(np.imag(eigvals))
         self.natural_frequencies = omega / (2 * np.pi)
 
         idx = np.argsort(self.natural_frequencies)
+        eigvecs = eigvecs[:, idx]
         self.natural_frequencies = self.natural_frequencies[idx]
-        self.mode_shapes = eigvecs[self.M_red.shape[0]:, idx]
+        self.natural_frequencies = [f for f in self.natural_frequencies if not (f < 0.2*2.0*np.pi)]  # Filter out BCs
 
 
     def get_frequencies(self):
