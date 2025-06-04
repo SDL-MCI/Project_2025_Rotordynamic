@@ -144,14 +144,24 @@ class RotorSystem:
                 Theta_d = (1/4) * m * r**2
                 Theta_p = 0.5 * m * r**2
 
-                node = int(np.clip(disc['pos'], 0, self.n_nodes - 1))
-                dofs = [4*node + i for i in range(4)]
-
+                # Local mass matrix for the disc: diag([m, Theta_p, m, Theta_p])
                 M_local = np.diag([m, Theta_p, m, Theta_p])
 
+                # Local gyroscopic matrix (only 2,4 and 4,2 elements nonzero)
                 G_local = np.zeros((4, 4))
-                G_local[1, 3] = -Theta_d * self.Omega
-                G_local[3, 1] = Theta_d * self.Omega
+                G_local[1, 3] = -Theta_d
+                G_local[3, 1] = Theta_d
+
+                # Map position to nearest node
+                node = int(np.clip(disc['pos'], 0, self.n_nodes - 1))  # Ensure within bounds
+
+                dof_uy = 4 * node      # v (Y translation)
+                dof_theta_z = dof_uy + 1  # θz (rotation about Z)
+                dof_uz = dof_uy + 2    # w (Z translation)
+                dof_theta_y = dof_uy + 3  # θy (rotation about Y)
+
+                # Assemble into global matrices
+                dofs = [dof_uy, dof_theta_z, dof_uz, dof_theta_y]
 
                 for i in range(4):
                     for j in range(4):

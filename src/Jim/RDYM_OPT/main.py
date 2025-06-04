@@ -13,7 +13,6 @@ custom_bounds = [
     (14, 17),              # Disc pos 2 [node]
     (5, 8),                # Bearing pos 1 [node]
     (14, 17),              # Bearing pos 2 [node]
-    (500, 1500)            # Rotation speed [rpm]
 ]
 
 
