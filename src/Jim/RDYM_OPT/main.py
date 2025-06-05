@@ -54,6 +54,6 @@ print(f"\n=== Rotational Speed ===\nOmega: {Omega:.2f} rad/s ({Omega * 60 / (2 *
 
 
 # === Plot Mode Shapes ===
-#plotter = ModePlotter(rotor)
-#plotter.plot_2D_modes(n_modes=3)
-#plotter.plot_3D_modes(n_modes=6)
+plotter = ModePlotter(rotor)
+plotter.plot_2D_modes(n_modes=6)
+plotter.plot_3D_modes(n_modes=6)
