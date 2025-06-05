@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from functions.rotorsystem import RotorSystem
 
 class ModePlotter:
     def __init__(self, rotor_system):
@@ -18,8 +19,8 @@ class ModePlotter:
         fig = plt.figure(figsize=(10, 2.5 * n_modes)) 
         for i in range(n_modes):
             full_mode = np.zeros(self.total_dof)
-            eigvec_displacement = mode_shapes[:, i]
-            full_mode[free_dofs] = np.abs(eigvec_displacement)
+            full_mode = mode_shapes[:, i]
+            #full_mode[free_dofs] = np.abs(eigvec_displacement[free_dofs])
 
             v = full_mode[0::4]  # u_y
             w = full_mode[2::4]  # u_z
@@ -62,8 +63,9 @@ class ModePlotter:
             ax = fig.add_subplot(111, projection='3d')
 
             full_mode = np.zeros(self.total_dof)
-            eigvec_displacement = mode_shapes[self.total_dof:, i]
-            full_mode[free_dofs] = np.abs(eigvec_displacement)
+            full_mode = mode_shapes[:, i]
+            #eigvec_displacement = mode_shapes[self.total_dof:, i]
+            #full_mode[free_dofs] = np.abs(eigvec_displacement[free_dofs])
 
             v = full_mode[0::4]
             w = full_mode[2::4]
@@ -105,3 +107,66 @@ class ModePlotter:
         z = z_center + radius * np.sin(theta)
         x = np.full_like(y, x_center)
         return list(zip(x, y, z))
+    
+    def compute_campbell_diagram(rotor_template, rpm_range, n_modes=12):
+        """
+        Parameters:
+            rotor_template (RotorSystem): A RotorSystem object used as a template.
+            rpm_range (array): Array of rpm values.
+            n_modes (int): Number of natural frequencies to extract.
+    
+        Returns:
+            np.ndarray: A 2D array of shape (len(rpm_range), n_modes)
+        """
+        campbell_data = []
+    
+        for rpm in rpm_range:
+            # Clone a new RotorSystem to avoid modifying the template in-place
+            beam = rotor_template.L, rotor_template.Douter, rotor_template.Dinner, rotor_template.rho, rotor_template.E, rotor_template.n_elem
+            beam_dict = {
+                'length': rotor_template.L,
+                'D_outer': rotor_template.Douter,
+                'D_inner': rotor_template.Dinner,
+                'density': rotor_template.rho,
+                'E': rotor_template.E,
+                'n_elem': rotor_template.n_elem
+            }
+    
+            discs_copy = [disc.copy() for disc in rotor_template.discs]
+            bearings_copy = [bear.copy() for bear in rotor_template.bearings]
+            Omega = rpm / 60 * 2 * np.pi
+    
+            rotor = RotorSystem(beam_dict, discs_copy, bearings_copy, Omega)
+            rotor.assemble_global_matrices()
+            rotor.apply_boundary_conditions()
+            try:
+                rotor.solve_eigenproblem()
+                freqs = rotor.get_frequencies()
+                campbell_data.append(freqs[:n_modes])
+            except:
+                campbell_data.append([np.nan] * n_modes)
+
+        return np.array(campbell_data)
+    
+    def plot_campbell_diagram(rpm_range, campbell_data):
+        """
+        Parameters:
+            rpm_range (array): RPM values.
+            campbell_data (2D array): Frequencies at each RPM (Hz).
+        """
+    
+        plt.figure(figsize=(14, 6))
+        for i in range(campbell_data.shape[1]):
+            plt.plot(rpm_range, campbell_data[:, i], label=f'f_{i+1}')
+    
+        plt.plot(rpm_range, rpm_range / 60, 'k--', label='1x speed')
+        plt.plot(rpm_range, 2 * rpm_range / 60, 'k:', label='2x speed')
+        plt.xlabel('Rotational Speed [RPM]')
+        plt.ylabel('Natural Frequencies [Hz]')
+        plt.title('Campbell Diagram')
+        plt.grid(True)
+        plt.legend(loc='upper right', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+        plt.tight_layout()
+        plt.show()
+
+    

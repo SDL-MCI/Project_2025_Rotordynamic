@@ -218,8 +218,23 @@ class RotorSystem:
         idx = np.argsort(self.natural_frequencies)
         eigvecs = eigvecs[:, idx]
         self.natural_frequencies = self.natural_frequencies[idx]
-        self.natural_frequencies = [f for f in self.natural_frequencies if not (f < 0.2*2.0*np.pi)]  # Filter out BCs
+        
+        threshold = 0.2 * 2.0 * np.pi   # Threshold to filter out BCs
+        keep_mask = self.natural_frequencies >= threshold    # Boolean of what to keep
+        
+        # Get the indices that are kept & filtered_out
+        kept_idx = np.where(keep_mask)[0]
+        filtered_out_idx = np.where(~keep_mask)[0]
 
+        # Filter natural_frequencies and eigvecs 
+        self.natural_frequencies = self.natural_frequencies[kept_idx]
+        self.mode_shapes = eigvecs[self.M_reduced.shape[0]:, kept_idx]
+        self.free_dofs = np.setdiff1d(np.arange(self.total_dof), filtered_out_idx)
+        
+        
+        #self.natural_frequencies = [f for f in self.natural_frequencies if not (f < 0.2*2.0*np.pi)]  # Filter out BCs
+
+        
 
     def get_frequencies(self):
         return self.natural_frequencies

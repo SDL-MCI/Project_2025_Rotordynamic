@@ -39,6 +39,16 @@ for i, f in enumerate(frequencies[:16]):
 
 # === PLOT RESULTS ===
 
-# plotter = ModePlotter(rotor)
-# plotter.plot_2D_modes(n_modes=6)
-# plotter.plot_3D_modes(n_modes=3)  # Optional: 3D plot if needed
+plotter = ModePlotter(rotor)
+plotter.plot_2D_modes(n_modes=6)
+plotter.plot_3D_modes(n_modes=6)  # Optional: 3D plot if needed
+
+# === Generate and Plot Campbell Diagram ===
+# rpm_range = np.arange(0, 1801, 50)
+# campbell_data = plotter.compute_campbell_diagram(rotor, rpm_range)
+# plotter.plot_campbell_diagram(rpm_range, campbell_data)
+
+"""
+1× speed	Shaft's rotational frequency (in Hz)
+2× speed	First harmonic (twice the rotational freq.)
+"""
