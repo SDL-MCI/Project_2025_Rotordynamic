@@ -153,7 +153,7 @@ class RotorSystem:
                 G_local[3, 1] = Theta_d
 
                 # Map position to nearest node
-                node = int(np.clip(disc['pos'], 0, self.n_nodes - 1))  # Ensure within bounds
+                node = int(np.clip(disc['pos'], 0, self.n_nodes))  # Ensure within bounds   node = int(np.clip(disc['pos'], 0, self.n_nodes - 1))
 
                 dof_uy = 4 * node      # v (Y translation)
                 dof_theta_z = dof_uy + 1  # θz (rotation about Z)

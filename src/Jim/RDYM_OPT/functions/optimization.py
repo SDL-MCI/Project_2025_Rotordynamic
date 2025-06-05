@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 def objective(x):
     length, D_outer, radius, thickness, d1, d2, b1, b2 = x
     rpm = 1500
-    density = 7833.4
-    E = 2.0684e11
+    density = 2700
+    E = 0.7e11
     n_elem = 20
 
     d1 = int(np.clip(round(d1), 0, n_elem))
@@ -56,10 +56,15 @@ def objective(x):
 
         cost = (
             0 * (spread1 + spread2 + spread3 + spread4)   # Penalize frequency spread within groups
-            - 0.5 * (delta12 + delta23 + delta34)          # Reward frequency separation between groups
-            + 5 * mean4                                    # Penalize high frequency in group 4
-            - 20 * mean1                                   # Reward high frequency in group 1
+            - 5 * (delta12 + delta23 + delta34)           # Reward frequency separation between groups
+            + 5 * mean4                                   # Penalize high frequency in group 4
+            - 10 * mean1                                  # Reward high frequency in group 1
         )
+        if not (28 <= mean1 <= 33):
+            cost += 1000  # or cost = 1e6
+
+        if not ( mean4 < 275):
+            cost += 1000  # or cost = 1e6
 
         return cost
 
@@ -73,8 +78,8 @@ def run_optimization(bounds):
 
     length, D_outer, radius, thickness, d1_, d2_, b1_, b2_ = result.x
     rpm = 1500
-    density = 7833.4
-    E = 2.0684e11
+    density = 2700 #7850
+    E = 0.7e11 #2.0e11
     n_elem = 20
 
     d1 = int(np.clip(round(d1_), 0, n_elem))

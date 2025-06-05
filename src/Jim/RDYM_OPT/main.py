@@ -6,13 +6,13 @@ import numpy as np
 # === Custom Bounds Defined in Main ===
 custom_bounds = [
     (0.95, 1.15),          # Beam length [m]
-    (0.005, 0.016),        # Beam D_outer [m]
-    (0.08, 0.10),          # Disc radius [m]
-    (0.006, 0.015),        # Disc thickness [m]
-    (5, 8),                # Disc pos 1 [node]
-    (14, 17),              # Disc pos 2 [node]
-    (5, 8),                # Bearing pos 1 [node]
-    (14, 17),              # Bearing pos 2 [node]
+    (0.017, 0.017),        # Beam D_outer [m]
+    (0.06, 0.1),           # Disc radius [m]
+    (0.012, 0.030),        # Disc thickness [m]
+    (6-1, 8-1),                # Disc pos 1 [node]
+    (16-1, 18-1),              # Disc pos 2 [node]
+    (3-1, 5-1),                # Bearing pos 1 [node]
+    (12-1, 15-1),              # Bearing pos 2 [node]
 ]
 
 
@@ -54,6 +54,6 @@ print(f"\n=== Rotational Speed ===\nOmega: {Omega:.2f} rad/s ({Omega * 60 / (2 *
 
 
 # === Plot Mode Shapes ===
-plotter = ModePlotter(rotor)
-plotter.plot_2D_modes(n_modes=3)
+#plotter = ModePlotter(rotor)
+#plotter.plot_2D_modes(n_modes=3)
 #plotter.plot_3D_modes(n_modes=6)
