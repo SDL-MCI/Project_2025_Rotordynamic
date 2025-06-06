@@ -1,5 +1,5 @@
-from functions.rotorsystem import RotorSystem
-from functions.plot import ModePlotter
+from functions.rotorsystem import RotorSystem, sensitivity_analysis, plot_sensitivity_bars
+from functions.plot import ModePlotter, compute_campbell_diagram, plot_campbell_diagram
 from functions.optimization import run_optimization
 import numpy as np
 
@@ -57,3 +57,36 @@ print(f"\n=== Rotational Speed ===\nOmega: {Omega:.2f} rad/s ({Omega * 60 / (2 *
 plotter = ModePlotter(rotor)
 plotter.plot_2D_modes(n_modes=6)
 plotter.plot_3D_modes(n_modes=6)
+
+
+
+# === Generate and Plot Campbell Diagram ===
+rpm_range = np.arange(0, 1801, 50)
+campbell_data = compute_campbell_diagram(rotor, rpm_range, n_modes=12)
+plot_campbell_diagram(rpm_range, campbell_data)
+"""
+1× speed	Shaft's rotational frequency (in Hz)
+2× speed	First harmonic (twice the rotational freq.)
+"""
+
+
+# === Sensitivity Analysis Results and Plot ===
+
+param_defs = [
+    ("Beam Length", lambda r: r.L, lambda r, v: setattr(r, 'L', v)),
+    ("Beam Diameter", lambda r: r.Douter, lambda r, v: setattr(r, 'Douter', v)),
+    ("Disc Radius", lambda r: r.discs[0]['diameter']/2, lambda r, v: r.discs[0].update({'diameter': 2*v})),
+    ("Disc Thickness", lambda r: r.discs[0]['thickness'], lambda r, v: r.discs[0].update({'thickness': v})),
+    ("Disc Position", lambda r: r.discs[0]['pos'], lambda r, v: r.discs[0].update({'pos': int(v)})),
+    ("Bearing 1 Pos", lambda r: r.bearings[0]['pos'], lambda r, v: r.bearings[0].update({'pos': int(v)}))
+]
+
+sensitivity = sensitivity_analysis(rotor, param_defs, delta=0.05, n_modes=6)
+
+print("\n=== Sensitivity Results ===")
+for name, sens in sensitivity:
+    print(f"\n{name}:")
+    for i, val in enumerate(sens):
+        print(f"  Mode {i+1}: {val:.3f} Hz / % change")
+
+plot_sensitivity_bars(sensitivity)

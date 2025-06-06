@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.linalg import eig
+import matplotlib.pyplot as plt
 
 class RotorSystem:
     def __init__(self, beam, discs, bearings, Omega):
@@ -238,3 +239,68 @@ class RotorSystem:
 
     def get_mode_shapes(self):
         return self.mode_shapes, self.free_dofs
+    
+
+
+# === Sensitivity Analysis ===
+
+def clone_rotor(rotor):
+    beam = {
+        'length': rotor.L,
+        'D_outer': rotor.Douter,
+        'density': rotor.rho,
+        'E': rotor.E,
+        'n_elem': rotor.n_elem
+    }
+    discs = [disc.copy() for disc in rotor.discs]
+    bearings = [b.copy() for b in rotor.bearings]
+    return RotorSystem(beam, discs, bearings, rotor.Omega)
+
+
+def sensitivity_analysis(rotor_template, param_defs, delta=0.05, n_modes=6):
+    base_freqs = rotor_template.get_frequencies()[:n_modes]
+    sensitivities = []
+
+    for name, get_func, set_func in param_defs:
+        original = get_func(rotor_template)
+        perturbed_up = original * (1 + delta)
+        perturbed_down = original * (1 - delta)
+
+        rotor_up = clone_rotor(rotor_template)
+        set_func(rotor_up, perturbed_up)
+        rotor_up.assemble_global_matrices()
+        rotor_up.apply_boundary_conditions()
+        rotor_up.solve_eigenproblem()
+        freqs_up = rotor_up.get_frequencies()[:n_modes]
+
+        rotor_down = clone_rotor(rotor_template)
+        set_func(rotor_down, perturbed_down)
+        rotor_down.assemble_global_matrices()
+        rotor_down.apply_boundary_conditions()
+        rotor_down.solve_eigenproblem()
+        freqs_down = rotor_down.get_frequencies()[:n_modes]
+
+        sens = (np.array(freqs_up) - np.array(freqs_down)) / (2 * delta * original)
+        sensitivities.append((name, sens))
+
+    return sensitivities
+
+
+def plot_sensitivity_bars(sensitivity_data):
+    param_names = [name for name, _ in sensitivity_data]
+    mode_count = len(sensitivity_data[0][1])
+    x = np.arange(len(param_names))
+    width = 0.1
+
+    plt.figure(figsize=(14, 6))
+    for i in range(mode_count):
+        mode_vals = [s[1][i] for s in sensitivity_data]
+        plt.bar(x + i * width, mode_vals, width, label=f'Mode {i+1}')
+
+    plt.xticks(x + width * (mode_count - 1) / 2, param_names, rotation=45)
+    plt.ylabel('Sensitivity (Hz / % change)')
+    plt.title('Sensitivity of Natural Frequencies to Parameter Changes')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
