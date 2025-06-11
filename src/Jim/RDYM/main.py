@@ -1,5 +1,5 @@
 from functions.rotorsystem import RotorSystem
-from functions.plot import ModePlotter
+from functions.plot import ModePlotter, compute_campbell_diagram, plot_campbell_diagram
 import numpy as np
 # === USER INPUTS ===
 
@@ -44,10 +44,9 @@ plotter.plot_2D_modes(n_modes=6)
 plotter.plot_3D_modes(n_modes=6)  # Optional: 3D plot if needed
 
 # === Generate and Plot Campbell Diagram ===
-# rpm_range = np.arange(0, 1801, 50)
-# campbell_data = plotter.compute_campbell_diagram(rotor, rpm_range)
-# plotter.plot_campbell_diagram(rpm_range, campbell_data)
-
+rpm_range = np.arange(0, 1801, 50)
+campbell_data = compute_campbell_diagram(rotor, rpm_range, n_modes=12)
+plot_campbell_diagram(rpm_range, campbell_data)
 """
 1× speed	Shaft's rotational frequency (in Hz)
 2× speed	First harmonic (twice the rotational freq.)
