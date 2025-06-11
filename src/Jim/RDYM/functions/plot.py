@@ -108,65 +108,54 @@ class ModePlotter:
         x = np.full_like(y, x_center)
         return list(zip(x, y, z))
     
-    def compute_campbell_diagram(rotor_template, rpm_range, n_modes=12):
-        """
-        Parameters:
-            rotor_template (RotorSystem): A RotorSystem object used as a template.
-            rpm_range (array): Array of rpm values.
-            n_modes (int): Number of natural frequencies to extract.
-    
-        Returns:
-            np.ndarray: A 2D array of shape (len(rpm_range), n_modes)
-        """
-        campbell_data = []
-    
-        for rpm in rpm_range:
-            # Clone a new RotorSystem to avoid modifying the template in-place
-            beam = rotor_template.L, rotor_template.Douter, rotor_template.Dinner, rotor_template.rho, rotor_template.E, rotor_template.n_elem
-            beam_dict = {
-                'length': rotor_template.L,
-                'D_outer': rotor_template.Douter,
-                'D_inner': rotor_template.Dinner,
-                'density': rotor_template.rho,
-                'E': rotor_template.E,
-                'n_elem': rotor_template.n_elem
-            }
-    
-            discs_copy = [disc.copy() for disc in rotor_template.discs]
-            bearings_copy = [bear.copy() for bear in rotor_template.bearings]
-            Omega = rpm / 60 * 2 * np.pi
-    
-            rotor = RotorSystem(beam_dict, discs_copy, bearings_copy, Omega)
-            rotor.assemble_global_matrices()
-            rotor.apply_boundary_conditions()
-            try:
-                rotor.solve_eigenproblem()
-                freqs = rotor.get_frequencies()
-                campbell_data.append(freqs[:n_modes])
-            except:
-                campbell_data.append([np.nan] * n_modes)
+# === Campbell diagram ===
 
-        return np.array(campbell_data)
-    
-    def plot_campbell_diagram(rpm_range, campbell_data):
-        """
-        Parameters:
-            rpm_range (array): RPM values.
-            campbell_data (2D array): Frequencies at each RPM (Hz).
-        """
-    
-        plt.figure(figsize=(14, 6))
-        for i in range(campbell_data.shape[1]):
-            plt.plot(rpm_range, campbell_data[:, i], label=f'f_{i+1}')
-    
-        plt.plot(rpm_range, rpm_range / 60, 'k--', label='1x speed')
-        plt.plot(rpm_range, 2 * rpm_range / 60, 'k:', label='2x speed')
-        plt.xlabel('Rotational Speed [RPM]')
-        plt.ylabel('Natural Frequencies [Hz]')
-        plt.title('Campbell Diagram')
-        plt.grid(True)
-        plt.legend(loc='upper right', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
-        plt.tight_layout()
-        plt.show()
+def compute_campbell_diagram(rotor_template, rpm_range, n_modes=12):
+    campbell_data = []
 
-    
+    for rpm in rpm_range:
+        # Rebuild beam dictionary
+        beam_dict = {
+            'length': rotor_template.L,
+            'D_outer': rotor_template.Douter,
+            'density': rotor_template.rho,
+            'E': rotor_template.E,
+            'n_elem': rotor_template.n_elem
+        }
+
+        # Copy discs and bearings
+        discs_copy = [disc.copy() for disc in rotor_template.discs]
+        bearings_copy = [bear.copy() for bear in rotor_template.bearings]
+
+        Omega = rpm / 60 * 2 * np.pi
+        rotor = RotorSystem(beam_dict, discs_copy, bearings_copy, Omega)
+
+        rotor.assemble_global_matrices()
+        rotor.apply_boundary_conditions()
+        try:
+            rotor.solve_eigenproblem()
+            freqs = rotor.get_frequencies()
+            campbell_data.append(freqs[:n_modes])
+        except Exception as e:
+            print(f"⚠️ Failed at {rpm} RPM: {e}")
+            campbell_data.append([np.nan] * n_modes)
+
+    return np.array(campbell_data)
+
+
+def plot_campbell_diagram(rpm_range, campbell_data):
+    import matplotlib.pyplot as plt
+
+    plt.figure(figsize=(14, 6))
+    for i in range(campbell_data.shape[1]):
+        plt.plot(rpm_range, campbell_data[:, i], label=f'f_{i+1}')
+
+    plt.plot(rpm_range, rpm_range / 60, 'k--', label='1x speed')
+    plt.plot(rpm_range, 2 * rpm_range / 60, 'k:', label='2x speed')
+    plt.xlabel('Rotational Speed [RPM]')
+    plt.ylabel('Natural Frequencies [Hz]')
+    plt.title('Campbell Diagram')
+    plt.grid(True)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
+    plt.tight_layout()
+    plt.show()
