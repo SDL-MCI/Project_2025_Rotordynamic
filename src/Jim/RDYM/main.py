@@ -4,7 +4,7 @@ import numpy as np
 # === USER INPUTS ===
 
 beam = {
-    'length': 1.1,        # [m]
+    'length': 1.0,        # [m]
     'D_outer': 0.017,        # [m]
     'density': 2700,       # [kg/m^3]
     'E': 0.7e11,          # [Pa]
@@ -12,8 +12,8 @@ beam = {
 }
 
 discs = [
-    {'pos': 6-1, 'diameter': 0.177, 'thickness': 0.016, 'density': 2700},
-    {'pos': 15-1, 'diameter': 0.177, 'thickness': 0.016, 'density': 2700}
+    {'pos': 5-1, 'diameter': 0.188, 'thickness': 0.025, 'density': 2700},
+    {'pos': 15-1, 'diameter': 0.188, 'thickness': 0.025, 'density': 2700}
 ]
 
 bearings = [

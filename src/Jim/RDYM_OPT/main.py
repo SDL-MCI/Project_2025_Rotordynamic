@@ -9,15 +9,29 @@ custom_bounds = [
     (0.017, 0.017),        # Beam D_outer [m]
     (0.06, 0.1),           # Disc radius [m]
     (0.012, 0.030),        # Disc thickness [m]
-    (6-1, 8-1),                # Disc pos 1 [node]
-    (16-1, 18-1),              # Disc pos 2 [node]
+    (4-1, 20-1),                # Disc pos 1 [node]
+    (15-1, 20-1),              # Disc pos 2 [node]
     (3-1, 5-1),                # Bearing pos 1 [node]
-    (12-1, 15-1),              # Bearing pos 2 [node]
+    (14-1, 15-1),              # Bearing pos 2 [node]
 ]
 
 
+# Starting point (must be within bounds)
+x0 = [1.1, 0.017, 0.177/2, 0.016, 4-1, 15-1, 3-1, 14-1]  
+
+# Ensure x0 is a 2D array with shape (popsize, len(x0))
+popsize = 15
+init_pop = np.random.uniform(
+    low=[b[0] for b in custom_bounds],
+    high=[b[1] for b in custom_bounds],
+    size=(popsize, len(custom_bounds))
+)
+
+# Overwrite first individual with your starting point
+init_pop[0] = x0
+
 # === Run Optimization with Custom Bounds ===
-beam, discs, bearings, Omega, result = run_optimization(custom_bounds)
+beam, discs, bearings, Omega, result = run_optimization(custom_bounds, init_pop)
 
 
 # === Setup Rotor System ===
@@ -70,23 +84,23 @@ plot_campbell_diagram(rpm_range, campbell_data)
 """
 
 
-# === Sensitivity Analysis Results and Plot ===
+# # === Sensitivity Analysis Results and Plot ===
 
-param_defs = [
-    ("Beam Length", lambda r: r.L, lambda r, v: setattr(r, 'L', v)),
-    ("Beam Diameter", lambda r: r.Douter, lambda r, v: setattr(r, 'Douter', v)),
-    ("Disc Radius", lambda r: r.discs[0]['diameter']/2, lambda r, v: r.discs[0].update({'diameter': 2*v})),
-    ("Disc Thickness", lambda r: r.discs[0]['thickness'], lambda r, v: r.discs[0].update({'thickness': v})),
-    ("Disc Position", lambda r: r.discs[0]['pos'], lambda r, v: r.discs[0].update({'pos': int(v)})),
-    ("Bearing 1 Pos", lambda r: r.bearings[0]['pos'], lambda r, v: r.bearings[0].update({'pos': int(v)}))
-]
+# param_defs = [
+#     ("Beam Length", lambda r: r.L, lambda r, v: setattr(r, 'L', v)),
+#     ("Beam Diameter", lambda r: r.Douter, lambda r, v: setattr(r, 'Douter', v)),
+#     ("Disc Radius", lambda r: r.discs[0]['diameter']/2, lambda r, v: r.discs[0].update({'diameter': 2*v})),
+#     ("Disc Thickness", lambda r: r.discs[0]['thickness'], lambda r, v: r.discs[0].update({'thickness': v})),
+#     ("Disc Position", lambda r: r.discs[0]['pos'], lambda r, v: r.discs[0].update({'pos': int(v)})),
+#     ("Bearing 1 Pos", lambda r: r.bearings[0]['pos'], lambda r, v: r.bearings[0].update({'pos': int(v)}))
+# ]
 
-sensitivity = sensitivity_analysis(rotor, param_defs, delta=0.05, n_modes=6)
+# sensitivity = sensitivity_analysis(rotor, param_defs, delta=0.05, n_modes=6)
 
-print("\n=== Sensitivity Results ===")
-for name, sens in sensitivity:
-    print(f"\n{name}:")
-    for i, val in enumerate(sens):
-        print(f"  Mode {i+1}: {val:.3f} Hz / % change")
+# print("\n=== Sensitivity Results ===")
+# for name, sens in sensitivity:
+#     print(f"\n{name}:")
+#     for i, val in enumerate(sens):
+#         print(f"  Mode {i+1}: {val:.3f} Hz / % change")
 
-plot_sensitivity_bars(sensitivity)
+# plot_sensitivity_bars(sensitivity)
