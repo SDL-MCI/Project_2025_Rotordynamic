@@ -22,8 +22,8 @@ class ModePlotter:
             full_mode = mode_shapes[:, i]
             #full_mode[free_dofs] = np.abs(eigvec_displacement[free_dofs])
 
-            v = full_mode[0::4]  # u_y
-            w = full_mode[2::4]  # u_z
+            v = np.real(full_mode[0::4])
+            w = np.real(full_mode[2::4])
 
             ax = fig.add_subplot(n_modes, 1, i+1)
             plt.plot(self.x, v, '-o', label='u_y')
@@ -67,8 +67,8 @@ class ModePlotter:
             #eigvec_displacement = mode_shapes[self.total_dof:, i]
             #full_mode[free_dofs] = np.abs(eigvec_displacement[free_dofs])
 
-            v = full_mode[0::4]
-            w = full_mode[2::4]
+            v = np.real(full_mode[0::4])
+            w = np.real(full_mode[2::4])
             y_def = v
             z_def = w
 
