@@ -4,7 +4,7 @@ import numpy as np
 # === USER INPUTS ===
 
 beam = {
-    'length': 1.0,        # [m]
+    'length': 1,        # [m]
     'D_outer': 0.017,        # [m]
     'density': 2700,       # [kg/m^3]
     'E': 0.7e11,          # [Pa]
@@ -12,13 +12,14 @@ beam = {
 }
 
 discs = [
-    {'pos': 5-1, 'diameter': 0.188, 'thickness': 0.025, 'density': 2700},
-    {'pos': 15-1, 'diameter': 0.188, 'thickness': 0.025, 'density': 2700}
+    {'pos': 5, 'diameter': 0.188, 'thickness': 0.025, 'density': 2700},
+    {'pos': 15, 'diameter': 0.188, 'thickness': 0.025, 'density': 2700}
 ]
 
 bearings = [
-    {'pos': 3-1},
-    {'pos': 14-1}
+    {'pos': 3},
+    {'pos': 14},
+    {'pos': 0}      # Added Bearing for fixed end (MOTOR)
 ]
 
 Omega = 1500/60*2*np.pi  # [rad/s] — optional: set to rotation speed

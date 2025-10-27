@@ -176,7 +176,8 @@ class RotorSystem:
 
         self.constrained_dofs = [
             4 * self.bearings[0]['pos'], 4 * self.bearings[0]['pos'] + 2,   # u_y, u_z at bearing 1
-            4 * self.bearings[1]['pos'], 4 * self.bearings[1]['pos'] + 2    # u_y, u_z at bearing 2
+            4 * self.bearings[1]['pos'], 4 * self.bearings[1]['pos'] + 2,   # u_y, u_z at bearing 2
+            4 * self.bearings[2]['pos'], 4 * self.bearings[2]['pos'] + 2    # u_y, u_z at bearing 3
         ]
 
         all_dofs = np.arange(self.total_dof)
